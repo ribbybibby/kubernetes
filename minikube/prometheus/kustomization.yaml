@@ -1,3 +1,7 @@
 resources:
   - prometheus.yaml
   - ssl_exporter.yaml
+configMapGenerator:
+  - name: prometheus
+    files:
+      - prometheus.yaml=resources/prometheus.yaml
