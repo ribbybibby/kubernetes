@@ -7,29 +7,29 @@ set -e
 NAMESPACE=${1:?"Usage $0 <namespace>"}
 CLUSTER=$(basename ${PWD})
 
-# argocd/applications/${NAMESPACE}.yaml
-jsonnet \
+# Create the namespace resource
+#   CREATE: default/${NAMESPACE}.yaml
+#   UPDATE: default/kustomization.yaml
+docker run --rm -v $(dirname ${PWD})/scripts/templates:/templates bitnami/jsonnet \
+    -V namespace="${NAMESPACE}" \
+    /templates/namespace.jsonnet \
+    | docker run -i --rm mikefarah/yq yq r - > "default/${NAMESPACE}.yaml"
+docker run --rm -v ${PWD}:/workdir mikefarah/yq yq w -i "default/kustomization.yaml" "resources[+]" "${NAMESPACE}.yaml"
+docker run --rm -v ${PWD}:/work tmknom/prettier --write "default/kustomization.yaml" > /dev/null
+
+# Create the namespace directory with an empty kustomization.yaml
+#   CREATE: ${NAMESPACE}/kustomization.yaml
+mkdir -p "${NAMESPACE}"
+docker run --rm mikefarah/yq yq n 'resources' [] > "${NAMESPACE}/kustomization.yaml"
+
+# Create a new argocd application for the namespace
+#   CREATE: argocd/applications/${NAMESPACE}.yaml
+#   UPDATE: argocd/kustomization.yaml
+docker run --rm -v $(dirname ${PWD})/scripts/templates:/templates bitnami/jsonnet \
     -V namespace="${NAMESPACE}" \
     -V path="${CLUSTER}/${NAMESPACE}" \
-    ../scripts/templates/argocd_application.jsonnet \
-    | yq r - > "argocd/applications/${NAMESPACE}.yaml"
-
-grep -q "applications/${NAMESPACE}.yaml" "argocd/kustomization.yaml" || \
-    yq w -i "argocd/kustomization.yaml" "resources[+]" "applications/${NAMESPACE}.yaml"
-
-prettier --write "argocd/kustomization.yaml" > /dev/null
-
-# default/${NAMESPACE}.yaml
-jsonnet \
-    -V namespace="${NAMESPACE}" \
-    ../scripts/templates/namespace.jsonnet \
-    | yq r - > "default/${NAMESPACE}.yaml"
-
-grep -q "${NAMESPACE}.yaml" "default/kustomization.yaml" || \
-    yq w -i "default/kustomization.yaml" "resources[+]" "${NAMESPACE}.yaml"
-
-prettier --write "default/kustomization.yaml" > /dev/null
-
-# ${CLUSTER}/${NAMESPACE}/kustomization.yaml
-mkdir -p "${NAMESPACE}"
-yq n 'resources' [] > "${NAMESPACE}/kustomization.yaml"
+    /templates/argocd_application.jsonnet \
+    | \
+    docker run -i --rm mikefarah/yq yq r - > "argocd/applications/${NAMESPACE}.yaml"
+docker run --rm -v ${PWD}:/workdir mikefarah/yq yq w -i "argocd/kustomization.yaml" "resources[+]" "applications/${NAMESPACE}.yaml"
+docker run --rm -v ${PWD}:/work tmknom/prettier --write "argocd/kustomization.yaml" > /dev/null
