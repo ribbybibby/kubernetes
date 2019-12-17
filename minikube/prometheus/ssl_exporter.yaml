@@ -4,6 +4,7 @@ metadata:
   labels:
     name: ssl-exporter
   name: ssl-exporter
+  namespace: prometheus
 spec:
   ports:
     - name: ssl-exporter
@@ -17,6 +18,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: ssl-exporter
+  namespace: prometheus
 spec:
   replicas: 1
   selector:
