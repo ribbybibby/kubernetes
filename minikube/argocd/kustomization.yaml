@@ -1,6 +1,0 @@
-resources:
-  - install.yaml
-  - projects.yaml
-  - applications/argocd.yaml
-  - applications/default.yaml
-  - applications/prometheus.yaml

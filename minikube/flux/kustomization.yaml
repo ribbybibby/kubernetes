@@ -1,0 +1,5 @@
+namespace: flux
+bases:
+  - github.com/fluxcd/flux//deploy?ref=1.17.0
+patchesStrategicMerge:
+  - flux-patch.yaml

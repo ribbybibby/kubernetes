@@ -1,3 +1,4 @@
+namespace: prometheus
 resources:
   - prometheus.yaml
   - ssl_exporter.yaml
